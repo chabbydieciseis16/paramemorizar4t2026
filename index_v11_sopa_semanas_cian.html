@@ -1,0 +1,1698 @@
+g<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Escuela Sabática - Iglesia Gerizim</title>
+  
+  <!-- SheetJS para exportar e importar archivos Excel -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <!-- html2canvas para capturas de pantalla -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- canvas-confetti para la celebración -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+  <!-- PDF.js para renderizado nativo limpio de páginas PDF -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.min.js"></script>
+  <script>
+    pdfjsLib.GlobalWorkerOptions.workerSrc = 'https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.16.105/pdf.worker.min.js';
+  </script>
+
+  <style>
+    :root {
+      --primary: #1a365d;
+      --accent: #d69e2e;
+      --bg: #f4f6f9;
+      --card-bg: #ffffff;
+      --text: #2d3748;
+      --success: #25D366;
+      --info: #3182ce;
+      --past-week-cyan: #00bcd4;
+      --past-week-cyan-bg: #e0f7fa;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: system-ui, -apple-system, sans-serif; }
+    body { background-color: var(--bg); color: var(--text); padding: 12px; max-width: 950px; margin: 0 auto; min-height: 100vh; }
+
+    header {
+      background: var(--primary);
+      color: white;
+      padding: 16px;
+      border-radius: 12px;
+      text-align: center;
+      position: relative;
+      margin-bottom: 12px;
+    }
+
+    .header-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .header-title-box h1 {
+      font-size: 1.4rem;
+      font-weight: bold;
+      color: white;
+    }
+    .header-title-box h2 {
+      font-size: 0.95rem;
+      font-weight: normal;
+      color: #38bdf8;
+      margin-top: 2px;
+    }
+
+    .header-controls {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 6px;
+    }
+
+    .btn-admin {
+      background: var(--accent);
+      color: #1a202c;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.8rem;
+    }
+
+    .btn-profile-circle {
+      width: 48px;
+      height: 48px;
+      border-radius: 50%;
+      background: #38a169;
+      color: white;
+      border: 2px solid white;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 0.65rem;
+      font-weight: bold;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+      transition: transform 0.2s;
+    }
+    .btn-profile-circle:hover { transform: scale(1.05); }
+
+    /* SELECTOR DE DEPARTAMENTO */
+    .dep-selector {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+      background: #e2e8f0;
+      padding: 6px;
+      border-radius: 10px;
+    }
+    .dep-btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.88rem;
+      background: transparent;
+      color: #4a5568;
+    }
+    .dep-btn.active {
+      background: white;
+      color: var(--primary);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+
+    /* SELECTOR DE SEMANAS CON DISTINCIÓN CIAN PARA SEMANAS PASADAS */
+    .weeks-container-box {
+      background: white;
+      border-radius: 10px;
+      padding: 12px;
+      border: 1px solid #cbd5e0;
+      margin-bottom: 14px;
+    }
+    .weeks-container-title {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--primary);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .weeks-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(90px, 1fr));
+      gap: 8px;
+    }
+    .week-card {
+      background: #f8fafc;
+      border: 2px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 8px 4px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .week-card:hover { transform: translateY(-2px); border-color: var(--primary); }
+    .week-card.active { border-color: var(--accent) !important; background: #fffaf0 !important; font-weight: bold; }
+    .week-card.current { border-color: var(--primary); background: #ebf8ff; }
+    
+    /* ESTILO CIAN/CELESTE PARA SEMANAS PASADAS COMPLETADAS */
+    .week-card.past-week {
+      background: var(--past-week-cyan-bg);
+      border-color: var(--past-week-cyan);
+    }
+    .week-card.past-week .num {
+      color: #00838f;
+    }
+    .week-card.past-week .sub {
+      color: #006064;
+    }
+
+    .week-card .num { font-size: 0.95rem; font-weight: bold; color: var(--primary); }
+    .week-card .sub { font-size: 0.65rem; color: #718096; margin-top: 2px; }
+
+    /* PESTAÑAS PRINCIPALES */
+    .tabs { display: flex; gap: 6px; margin-bottom: 14px; flex-wrap: wrap; }
+    .tab-btn {
+      flex: 1;
+      padding: 12px 8px;
+      border: none;
+      background: #cbd5e0;
+      color: #2d3748;
+      font-weight: bold;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 0.85rem;
+      text-align: center;
+      white-space: nowrap;
+    }
+    .tab-btn.active { background: var(--primary); color: white; }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* SALUDO */
+    .user-greeting-box {
+      background: #ebf8ff;
+      border-left: 5px solid var(--info);
+      padding: 12px 16px;
+      border-radius: 8px;
+      margin-bottom: 14px;
+      font-size: 0.92rem;
+      color: #2b6cb0;
+      line-height: 1.5;
+    }
+
+    /* HERO CARD DE VERSÍCULO */
+    .hero-card {
+      background: var(--card-bg);
+      border-radius: 14px;
+      padding: 20px;
+      border-left: 6px solid var(--accent);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+      margin-bottom: 16px;
+    }
+    .hero-badge {
+      display: inline-block;
+      background: #feebc8;
+      color: #744210;
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+    .hero-title { font-size: 1.1rem; color: var(--primary); margin-bottom: 4px; }
+    .hero-date { font-size: 0.8rem; color: #718096; margin-bottom: 12px; }
+    .hero-verse { font-size: 1rem; font-style: italic; line-height: 1.5; margin-bottom: 12px; }
+    .hero-ref { font-weight: bold; text-align: right; color: var(--primary); }
+
+    audio { width: 100%; margin: 12px 0; }
+
+    .action-row { display: flex; gap: 8px; margin-top: 10px; margin-bottom: 16px; }
+    .btn {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+      color: white;
+      font-size: 0.85rem;
+      text-align: center;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      text-decoration: none;
+    }
+    .btn-whatsapp { background: #25D366; color: white; }
+    .btn-capture { background: #38a169; }
+
+    /* BARRA DE PROGRESO DE JUEGOS Y CELEBRACIÓN */
+    .game-progress-card {
+      background: white;
+      padding: 14px 18px;
+      border-radius: 10px;
+      border: 1px solid #cbd5e0;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.04);
+    }
+    .game-progress-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+    .progress-bar-bg {
+      width: 100%;
+      height: 16px;
+      background: #e2e8f0;
+      border-radius: 10px;
+      overflow: hidden;
+      position: relative;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #3182ce, #25D366);
+      transition: width 0.5s ease;
+    }
+
+    .game-menu { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
+    .game-btn {
+      background: #edf2f7; color: #2d3748; border: 1px solid #cbd5e0; padding: 8px 12px;
+      border-radius: 8px; font-weight: bold; cursor: pointer; font-size: 0.85rem;
+      display: flex; align-items: center; gap: 6px;
+    }
+    .game-btn.active { background: var(--accent); color: white; border-color: var(--accent); }
+    .game-btn.completed { border-color: #25D366; background: #e6fffa; color: #234e52; }
+
+    .game-box { background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.06); margin-bottom: 20px; }
+
+    .word-pool, .target-pool { display: flex; flex-wrap: wrap; gap: 6px; padding: 12px; border: 2px dashed #cbd5e0; border-radius: 8px; min-height: 50px; margin-bottom: 12px; background: #f7fafc; }
+    .word-chip { background: var(--primary); color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; cursor: pointer; font-weight: bold; }
+
+    /* SOPA DE LETRAS CON SELECCIÓN POR ARRASTRE */
+    .wordsearch-grid { 
+      display: grid; 
+      gap: 4px; 
+      margin: 16px 0; 
+      justify-content: center; 
+      user-select: none;
+      touch-action: none;
+    }
+    .ws-cell { 
+      width: 34px; 
+      height: 34px; 
+      background: #f7fafc; 
+      border: 1px solid #cbd5e0; 
+      display: flex; 
+      align-items: center; 
+      justify-content: center; 
+      font-weight: bold; 
+      cursor: pointer; 
+      user-select: none; 
+      border-radius: 4px; 
+      font-size: 0.95rem; 
+      transition: background 0.1s;
+    }
+    .ws-cell.selecting { background: #cbd5e0; color: #1a202c; }
+    .ws-cell.selected { background: #3182ce; color: white; }
+    .ws-cell.found { background: #25D366; color: white; }
+
+    /* ESTRUCTURA PESTAÑA LECCIONES */
+    .lessons-layout {
+      display: flex;
+      gap: 16px;
+      min-height: 600px;
+    }
+
+    .sidebar-lessons {
+      width: 280px;
+      background: white;
+      border: 1px solid #cbd5e0;
+      border-radius: 12px;
+      padding: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      max-height: 650px;
+      overflow-y: auto;
+    }
+
+    .lesson-sidebar-item {
+      padding: 10px;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      cursor: pointer;
+      background: #f8fafc;
+      transition: all 0.2s;
+    }
+
+    .lesson-sidebar-item:hover {
+      background: #ebf8ff;
+      border-color: #3182ce;
+    }
+
+    .lesson-sidebar-item.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .lesson-sidebar-item.active .title,
+    .lesson-sidebar-item.active .sub {
+      color: white;
+    }
+
+    .lesson-sidebar-item .title {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .lesson-sidebar-item .sub {
+      font-size: 0.75rem;
+      color: #718096;
+      margin-top: 2px;
+    }
+
+    .pdf-viewer-main {
+      flex: 1;
+      background: #ffffff;
+      border: 1px solid #cbd5e0;
+      border-radius: 12px;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      position: relative;
+    }
+
+    .pdf-viewer-header {
+      background: white;
+      padding: 10px 16px;
+      border-bottom: 1px solid #cbd5e0;
+      font-weight: bold;
+      color: var(--primary);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    /* VISOR PDF LIMPIO CON FALLBACK DE RENDERIZADO GARANTIZADO */
+    .pdf-clean-container {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      overflow-y: auto;
+      padding: 16px;
+      background: #4a5568;
+      min-height: 450px;
+    }
+
+    .pdf-canvas-wrapper {
+      background: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      border-radius: 4px;
+      margin-bottom: 12px;
+      max-width: 100%;
+    }
+
+    canvas {
+      display: block;
+      max-width: 100%;
+      height: auto;
+    }
+
+    .pdf-fallback-frame {
+      width: 100%;
+      height: 480px;
+      border: none;
+      background: white;
+    }
+
+    /* CONTROLES DE NAVEGACIÓN LIMPIOS DE PÁGINAS */
+    .pdf-nav-controls {
+      background: white;
+      padding: 8px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-top: 1px solid #cbd5e0;
+      gap: 12px;
+    }
+
+    .pdf-nav-btn {
+      background: var(--primary);
+      color: white;
+      border: none;
+      padding: 6px 14px;
+      border-radius: 6px;
+      font-weight: bold;
+      cursor: pointer;
+      font-size: 0.85rem;
+    }
+    .pdf-nav-btn:disabled {
+      background: #cbd5e0;
+      cursor: not-allowed;
+    }
+
+    .pdf-page-indicator {
+      font-size: 0.9rem;
+      font-weight: bold;
+      color: var(--primary);
+    }
+
+    .pdf-footer-download {
+      background: #f8fafc;
+      padding: 12px;
+      border-top: 1px solid #cbd5e0;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .btn-green-download {
+      background: #25D366;
+      color: white;
+      font-weight: bold;
+      padding: 10px 24px;
+      border-radius: 25px;
+      border: none;
+      cursor: pointer;
+      font-size: 0.95rem;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+      box-shadow: 0 3px 8px rgba(37, 211, 102, 0.3);
+      transition: transform 0.2s;
+    }
+    .btn-green-download:hover {
+      transform: scale(1.03);
+      background: #22c35e;
+    }
+
+    /* MODALES */
+    .modal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.7); z-index: 1000; justify-content: center; align-items: center; padding: 12px;
+    }
+    .modal-content {
+      background: white; width: 100%; max-width: 680px; max-height: 90vh; overflow-y: auto; border-radius: 12px; padding: 20px;
+    }
+    .form-group { margin-bottom: 12px; }
+    .form-group label { display: block; font-size: 0.8rem; font-weight: bold; margin-bottom: 4px; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 6px; font-size: 0.85rem;
+    }
+
+    #previewModal {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(0,0,0,0.85); justify-content: center; align-items: center; flex-direction: column; padding: 16px; z-index: 2000;
+    }
+    #previewModal img { max-width: 100%; max-height: 70vh; border-radius: 8px; margin-bottom: 12px; }
+
+    @media (max-width: 768px) {
+      .lessons-layout { flex-direction: column; }
+      .sidebar-lessons { width: 100%; max-height: 220px; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- MODAL PARA AGREGAR / EDITAR PERFIL -->
+  <div id="userModal" class="modal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3 style="color:var(--primary);">Perfil de Usuario</h3>
+        <button class="btn btn-capture" style="background:#e53e3e; padding:4px 8px;" onclick="closeUserProfile()">X</button>
+      </div>
+      <p style="font-size:0.85rem; color:#4a5568; margin-bottom:16px;">Ingresa tus datos personales:</p>
+      <form id="userForm" onsubmit="saveUserProfile(event)">
+        <div class="form-group">
+          <label>Nombre Completo</label>
+          <input type="text" id="inputName" placeholder="Tu nombre" required>
+        </div>
+        <div class="form-group">
+          <label>Iglesia</label>
+          <input type="text" id="inputChurch" placeholder="Nombre de tu iglesia local">
+        </div>
+        <div class="form-group">
+          <label>Distrito</label>
+          <select id="inputDistrict">
+            <option value="">-- Selecciona tu distrito --</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Asociación</label>
+          <input type="text" id="inputAssociation" placeholder="Ej: Asociación Tabasqueña">
+        </div>
+        <button type="submit" class="btn btn-whatsapp" style="width:100%; margin-top:10px; background:var(--primary);">Guardar Perfil</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-top">
+      <div class="header-title-box">
+        <h1>Escuela Sabática</h1>
+        <h2>Iglesia Gerizim</h2>
+      </div>
+      <div class="header-controls">
+        <button class="btn-admin" onclick="requestAdminAccess()">⚙️ Config</button>
+        <button class="btn-profile-circle" onclick="openUserProfile()" title="Perfil de Usuario">
+          👤<br>Perfil
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <!-- MENSAJE DINÁMICO CON SALUDO -->
+  <div id="greetingBox" class="user-greeting-box">
+    Hola 👋. ¿Te acuerdas de aprender el versículo de esta semana? Juega para practicar en la sección de <b>Juegos</b> o estudiar lecciones en PDF.
+  </div>
+
+  <!-- SELECTOR DE DEPARTAMENTO -->
+  <div class="dep-selector">
+    <button class="dep-btn active" onclick="switchDepartment('adultos')">Adultos</button>
+    <button class="dep-btn" onclick="switchDepartment('menores')">Menores</button>
+    <button class="dep-btn" onclick="switchDepartment('jardin')">Jardín de Infantes</button>
+  </div>
+
+  <!-- SELECTOR DE SEMANAS -->
+  <div class="weeks-container-box">
+    <div class="weeks-container-title">
+      <span>🗓️ Selección de Semana (13 Semanas)</span>
+      <span id="selectedWeekLabel" style="color:var(--accent);">Semana 1</span>
+    </div>
+    <div id="weeksGrid" class="weeks-grid"></div>
+  </div>
+
+  <!-- PESTAÑAS PRINCIPALES -->
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('versiculos')">📖 Versículos</button>
+    <button class="tab-btn" onclick="switchTab('juegos')">🎮 Juegos</button>
+    <button class="tab-btn" onclick="switchTab('lecciones')">📄 Lecciones en PDF</button>
+  </div>
+
+  <!-- PESTAÑA 1: VERSÍCULOS Y AUDIOS -->
+  <div id="tabVersiculos" class="tab-content active">
+    <div id="heroCapture" class="hero-card">
+      <span id="heroBadge" class="hero-badge">Cargando...</span>
+      <h3 id="heroTitle" class="hero-title">Cargando...</h3>
+      <div id="heroDate" class="hero-date">--</div>
+      <p id="heroVerse" class="hero-verse">"--"</p>
+      <div id="heroRef" class="hero-ref">--</div>
+    </div>
+
+    <audio id="audioPlayer" controls></audio>
+
+    <div class="action-row">
+      <button class="btn btn-whatsapp" onclick="sendWhatsApp()">📲 Enviar por WhatsApp</button>
+      <button class="btn btn-capture" onclick="generateCapture()">📸 Captura</button>
+    </div>
+  </div>
+
+  <!-- PESTAÑA 2: JUEGOS INTERACTIVOS -->
+  <div id="tabJuegos" class="tab-content">
+    <div class="game-progress-card">
+      <div class="game-progress-header">
+        <span>🎯 Progreso de Juegos de la Semana</span>
+        <span id="progressPercentText" style="color:#25D366;">0% Completado</span>
+      </div>
+      <div class="progress-bar-bg">
+        <div id="progressBarFill" class="progress-bar-fill"></div>
+      </div>
+    </div>
+
+    <div class="game-menu">
+      <button id="btnGame1" class="game-btn active" onclick="switchGame('ordenar')">🧩 1. Ordenar</button>
+      <button id="btnGame2" class="game-btn" onclick="switchGame('sopa')">🔍 2. Sopa de Letras</button>
+      <button id="btnGame3" class="game-btn" onclick="switchGame('completar')">✏️ 3. Completar</button>
+      <button id="btnGame4" class="game-btn" onclick="switchGame('opcion')">❓ 4. Opción Múltiple</button>
+    </div>
+
+    <div class="game-box">
+      <h4 id="gameTitle" style="color:var(--primary); margin-bottom:8px;">Cargando juego...</h4>
+      <p id="gameDesc" style="font-size:0.85rem; color:#718096; margin-bottom:16px;">Practica el versículo de la lección seleccionada.</p>
+
+      <!-- Forma 1: Ordenar palabras -->
+      <div id="gameOrdenar">
+        <p style="font-size:0.8rem; font-weight:bold; margin-bottom:6px;">Arma el versículo haciendo clic en las palabras:</p>
+        <div id="targetPool" class="target-pool"></div>
+        <div id="wordPool" class="word-pool"></div>
+        <div style="display:flex; gap:8px;">
+          <button class="btn btn-whatsapp" style="background:var(--primary);" onclick="checkWordOrder()">Verificar</button>
+          <button class="btn btn-capture" style="background:#718096;" onclick="initOrderGame()">Reiniciar</button>
+        </div>
+      </div>
+
+      <!-- Forma 2: Sopa de letras con arrastre corregido -->
+      <div id="gameSopa" style="display:none;">
+        <p style="font-size:0.8rem; font-weight:bold;">Encuentra todas las palabras clave arrastrando el dedo o cursor:</p>
+        <div id="wsWordList" style="margin:8px 0; font-size:0.85rem; color:var(--primary); font-weight:bold;"></div>
+        <div id="wsGrid" class="wordsearch-grid"></div>
+        <div style="display:flex; gap:8px; margin-top:12px;">
+          <button class="btn btn-capture" style="background:#718096;" onclick="initSopaGame()">Reiniciar Sopa</button>
+        </div>
+      </div>
+
+      <!-- Forma 3: Completar Espacios -->
+      <div id="gameCompletar" style="display:none;">
+        <div id="fillVerseContainer" style="line-height:2; font-size:1rem; margin-bottom:16px;"></div>
+        <button class="btn btn-whatsapp" style="background:var(--primary);" onclick="checkFillGame()">Verificar Respuestas</button>
+      </div>
+
+      <!-- Forma 4: Opción Múltiple -->
+      <div id="gameOpcion" style="display:none;">
+        <p style="font-size:0.9rem; margin-bottom:12px; font-weight:bold;">¿A qué cita bíblica pertenece el siguiente versículo?</p>
+        <blockquote id="quizVerseText" style="font-style:italic; background:#f7fafc; padding:12px; border-left:4px solid var(--info); margin-bottom:16px; border-radius:4px;"></blockquote>
+        <div id="quizOptionsContainer" style="display:flex; flex-direction:column; gap:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- PESTAÑA 3: LECCIONES EN PDF CON VISOR NATIVO LIMPIO -->
+  <div id="tabLecciones" class="tab-content">
+    <div class="lessons-layout">
+      <!-- VENTANA LATERAL -->
+      <div class="sidebar-lessons">
+        <h4 id="sidebarDepTitle" style="font-size:0.9rem; color:var(--primary); margin-bottom:8px;">Lecciones</h4>
+        <div id="sidebarLessonsList"></div>
+      </div>
+
+      <!-- VISOR PDF PRINCIPAL -->
+      <div class="pdf-viewer-main">
+        <div class="pdf-viewer-header">
+          <span id="pdfViewerTitle">Visor de Lección PDF</span>
+          <span id="pdfViewerSubtitle" style="font-size:0.8rem; font-weight:normal; color:#718096;">Folleto de Estudio</span>
+        </div>
+        
+        <!-- ÁREA LIMPIA DE PÁGINAS PDF CON FALLBACK NATIVO GARANTIZADO -->
+        <div class="pdf-clean-container" id="pdfCleanContainer">
+          <div class="pdf-canvas-wrapper" id="pdfCanvasWrapper">
+            <canvas id="pdfCanvas"></canvas>
+          </div>
+          <iframe id="pdfFallbackFrame" class="pdf-fallback-frame" style="display:none;"></iframe>
+        </div>
+
+        <!-- CONTROLES LIMPIOS DE PÁGINA NAVEGABLE -->
+        <div class="pdf-nav-controls" id="pdfNavControls">
+          <button class="pdf-nav-btn" id="pdfPrevBtn" onclick="prevPdfPage()">◀ Anterior</button>
+          <span class="pdf-page-indicator" id="pdfPageIndicator">Página 1 de 1</span>
+          <button class="pdf-nav-btn" id="pdfNextBtn" onclick="nextPdfPage()">Siguiente ▶</button>
+        </div>
+
+        <!-- BOTÓN VERDE DESCARGAR PDF INFERIOR -->
+        <div class="pdf-footer-download">
+          <a id="pdfGreenDownloadBtn" href="#" download target="_blank" class="btn-green-download">
+            📥 Descargar el PDF
+          </a>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- MODAL DE ADMINISTRACIÓN -->
+  <div id="adminModal" class="modal">
+    <div class="modal-content">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px;">
+        <h3>Panel de Configuración de Lecciones, PDFs y Audios</h3>
+        <button class="btn btn-capture" style="background:#e53e3e; padding:4px 8px;" onclick="closeAdminModal()">X</button>
+      </div>
+
+      <div style="display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap;">
+        <button class="btn btn-whatsapp" style="background:#276749;" onclick="exportToExcel()">📊 Exportar Excel</button>
+        <button class="btn btn-whatsapp" style="background:#2b6cb0;" onclick="downloadExcelTemplate()">📥 Descargar Plantilla Excel</button>
+        <button class="btn btn-whatsapp" style="background:#3182ce;" onclick="document.getElementById('excelInput').click()">📤 Importar Excel</button>
+        <input type="file" id="excelInput" accept=".xlsx, .xls, .csv" style="display:none" onchange="importFromExcel(event)">
+        <button class="btn btn-capture" style="background:#718096;" onclick="resetToDefaults()">🔄 Restaurar Predeterminados</button>
+      </div>
+
+      <div id="adminEditorList"></div>
+    </div>
+  </div>
+
+  <!-- CAPTURA MODAL -->
+  <div id="previewModal">
+    <img id="generatedImage" src="" alt="Captura de versículo">
+    <div style="display:flex; gap:10px;">
+      <a id="downloadImageBtn" download="Versiculo_EscuelaSabatica.png" class="btn btn-whatsapp" style="background:#38a169;">📥 Descargar Foto</a>
+      <button class="btn btn-whatsapp" style="background:#3182ce;" onclick="closePreviewModal()">Cerrar</button>
+    </div>
+  </div>
+
+  <script>
+    const DISTRITOS_ASOCIACION = [
+      "Centro / Villahermosa I", "Villahermosa II", "Villahermosa III", "Villahermosa IV",
+      "Chontalpa I (Comalcalco)", "Chontalpa II (Cárdenas)", "Chontalpa III (Cunduacán)", "Chontalpa IV (Paraíso)",
+      "Frontera / Centla", "Macuspana I", "Macuspana II", "Teapa / Sierra",
+      "Tacotalpa", "Jalpa de Méndez", "Nacajuca", "Huimanguillo I", "Huimanguillo II", "Tenosique / Ríos"
+    ];
+
+    const WEEKS_SCHEDULE = [
+      { sem: 1, inicio: "2026-09-27", fin: "2026-10-03" },
+      { sem: 2, inicio: "2026-10-04", fin: "2026-10-10" },
+      { sem: 3, inicio: "2026-10-11", fin: "2026-10-17" },
+      { sem: 4, inicio: "2026-10-18", fin: "2026-10-24" },
+      { sem: 5, inicio: "2026-10-25", fin: "2026-10-31" },
+      { sem: 6, inicio: "2026-11-01", fin: "2026-11-07" },
+      { sem: 7, inicio: "2026-11-08", fin: "2026-11-14" },
+      { sem: 8, inicio: "2026-11-15", fin: "2026-11-21" },
+      { sem: 9, inicio: "2026-11-22", fin: "2026-11-28" },
+      { sem: 10, inicio: "2026-11-29", fin: "2026-12-05" },
+      { sem: 11, inicio: "2026-12-06", fin: "2026-12-12" },
+      { sem: 12, inicio: "2026-12-13", fin: "2026-12-19" },
+      { sem: 13, inicio: "2026-12-20", fin: "2026-12-26" }
+    ];
+
+    function getInitialData() {
+      const buildWeek = (sem, t, tx, r, prefix) => ({
+        sem: sem,
+        fechaInicio: WEEKS_SCHEDULE[sem-1].inicio,
+        fechaFin: WEEKS_SCHEDULE[sem-1].fin,
+        titulo: t,
+        texto: tx,
+        ref: r,
+        audio: `audios/audio_${prefix}_sem${String(sem).padStart(2, '0')}.mp3`,
+        pdfUrl: `pdf/${prefix}/leccion_sem${String(sem).padStart(2, '0')}.pdf`
+      });
+
+      return {
+        adultos: [
+          buildWeek(1, "Lección 1: El Creador habla", "En el pasado, Dios habló muchas veces y de muchas maneras a nuestros padres mediante los profetas; pero en estos últimos días nos habló por su Hijo, a quien constituyó heredero de todo, por medio de quien hizo el universo", "Hebreos 1:1-2", "adultos"),
+          buildWeek(2, "Lección 2: El llamado de un profeta", "Después oí la voz del Señor, que dijo: \"¿A quién enviaré? ¿Quién irá de nuestra parte?\". Entonces respondí: \"Aquí estoy, envíame a mí\"", "Isaías 6:8", "adultos"),
+          buildWeek(3, "Lección 3: Profetas del Antiguo Testamento", "Josafat se puso en pie y dijo: \"Óiganme, Judá y habitantes de Jerusalén: crean al Señor su Dios y estarán seguros; crean a sus profetas y serán prosperados\"", "2 Crónicas 20:20", "adultos"),
+          buildWeek(4, "Lección 4: Profetas del Nuevo Testamento", "Ahora bien, hay diversos dones, pero el Espíritu es el mismo. Hay diversos ministerios, pero el Señor es el mismo; y hay diversas actividades, pero Dios, que efectúa todas las cosas en todos, es el mismo", "1 Corintios 12:4-6", "adultos"),
+          buildWeek(5, "Lección 5: Revelación e Inspiración", "La revelación de Jesucristo, que Dios le dio para manifestar a sus siervos lo que debe suceder pronto; y la declaró mediante su ángel a su siervo Juan. Y Juan testifica de todo lo que vio, de la palabra de Dios y del testimonio de Jesucristo", "Apocalipsis 1:1-2", "adultos"),
+          buildWeek(6, "Lección 6: Los escritos proféticos", "Todo lo que antes fue escrito, para nuestra enseñanza fue escrito, para que por la paciencia y el consuelo de las Escrituras tengamos esperanza", "Romanos 15:4", "adultos"),
+          buildWeek(7, "Lección 7: ¡Escuchen esto!", "Estas cosas les sucedieron por ejemplo, y fueron escritas para advertirnos a nosotros, a los que han llegado al fin del tiempo", "1 Corintios 10:11", "adultos"),
+          buildWeek(8, "Lección 8: Interpretación de los escritos proféticos", "Y empezando desde Moisés y todos los profetas, les explicó lo que toda la Escritura decía de él", "Lucas 24:27", "adultos"),
+          buildWeek(9, "Lección 9: Poniendo a prueba a los profetas", "Amados, no crean a todo espíritu, sino prueben los espíritus si son de Dios; porque muchos falsos profetas han salido al mundo", "1 Juan 4:1", "adultos"),
+          buildWeek(10, "Lección 10: Autoridad y relevancia proféticas", "Porque la palabra de Dios es viva y eficaz, más cortante que cualquier espada de dos filos. Penetra hasta partir el alma y el espíritu, las coyunturas y los tuétanos, y discierne los pensamientos y las intenciones del corazón", "Hebreos 4:12", "adultos"),
+          buildWeek(11, "Lección 11: Manifestación profética en momentos cruciales", "Nada hace Dios, el Señor, sin revelar su secreto a sus siervos los profetas", "Amós 3:7", "adultos"),
+          buildWeek(12, "Lección 12: Revelaciones proféticas del fin de los tiempos", "Después de esto derramaré mi Espíritu sobre toda carne; sus hijos e hijas profetizarán, sus ancianos tendrán sueños y sus jóvenes verán visiones; hasta sobre los siervos y las siervas derramaré mi Espíritu en esos días", "Joel 2:28-29", "adultos"),
+          buildWeek(13, "Lección 13: Bendiciones de la palabra profética", "Toda la Escritura es inspirada por Dios, y es útil para enseñar, reprender, enmendar e instruir en justicia, para que el hombre de Dios sea perfecto, cabalmente instruido para toda buena obra", "2 Timoteo 3:16-17", "adultos")
+        ],
+        menores: [
+          buildWeek(1, "Lección 1: Pensando en ti", "Elías hizo lo que el Señor le ordenó, y fue y se quedó a vivir junto al arroyo Querit, al oriente del río Jordán", "1 Reyes 17:5", "menores"),
+          buildWeek(2, "Lección 2: Primero fuego, después lluvia", "¡Respóndeme, Señor; respóndeme, para que esta gente sepa que tú eres Dios, y que los invitas a volverse de nuevo a ti!", "1 Reyes 18:37", "menores"),
+          buildWeek(3, "Lección 3: Una promesa cumplida", "No es que el Señor se tarde en cumplir su promesa, como algunos suponen, sino que tiene paciencia con ustedes, pues no quiere que nadie muera, sino que todos se vuelvan a Dios", "2 Pedro 3:9", "menores"),
+          buildWeek(4, "Lección 4: Huyendo de Dios", "Nunca te dejaré ni te abandonaré", "Hebreos 13:5", "menores"),
+          buildWeek(5, "Lección 5: Corriendo con Dios", "Aun cuando caiga, no quedará caído, porque el Señor lo tiene de la mano", "Salmo 37:24", "menores"),
+          buildWeek(6, "Lección 6: El diario de Nehemías", "Ustedes solo tienen que respetar al Señor y rendirle culto con verdad y de todo corazón, teniendo en cuenta lo mucho que él ha hecho por ustedes", "1 Samuel 12:24", "menores"),
+          buildWeek(7, "Lección 7: Planes de construcción", "Hermanos, en el nombre de nuestro Señor Jesucristo les ruego que todos estén siempre de acuerdo y que no haya divisiones entre ustedes. Vivan en armonía, pensando y sintiendo de la misma manera", "1 Corintios 1:10", "menores"),
+          buildWeek(8, "Lección 8: La batalla de Dios", "Cuando nuestros enemigos supieron que estábamos preparados y que Dios había desbaratado sus planes, todos nosotros volvimos a la muralla, cada cual a su trabajo", "Nehemías 4:15", "menores"),
+          buildWeek(9, "Lección 9: Dar la gloria a Dios", "¡Den gracias al Señor! ¡Proclamen su nombre! Cuenten a los pueblos sus acciones. Canten himnos en su honor. ¡Hablen de sus grandes hechos!", "1 Crónicas 16:8, 9", "menores"),
+          buildWeek(10, "Lección 10: La elección de Dios", "Pero nosotros siempre tenemos que dar gracias a Dios por ustedes, hermanos amados por el Señor, porque Dios los escogió para que fueran los primeros en alcanzar la salvación por medio del Espíritu que los hace santos y de la verdad en que han creído", "2 Tesalonicenses 2:13", "menores"),
+          buildWeek(11, "Lección 11: Un cambio de plans", "Por la mañana hazme saber de tu amor, porque en ti he puesto mi confianza. Hazme saber cuál debe ser mi conducta, porque a ti dirijo mis anhelos", "Salmo 143:8", "menores"),
+          buildWeek(12, "Lección 12: Gozo para ti y para mí", "Pues Dios amó tanto al mundo, que dio a su Hijo único, para que todo aquel que cree en él no muera, sino que tenga vida eterna", "Juan 3:16", "menores"),
+          buildWeek(13, "Lección 13: Sueños, viajes y una estrella", "Yo te guiaré continuamente, te daré comida abundante en el desierto, daré fuerza a tu cuerpo y serás como un jardín bien regado, como un manantial al que no le falta el agua", "Isaías 58:11", "menores")
+        ],
+        jardin: [
+          buildWeek(1, "Lección 1: Jesús calma la tormenta", "«¡Silencio! ¡Cálmense!»", "Marcos 4:39", "jardin"),
+          buildWeek(2, "Lección 2: «Por favor, sana a mi hijo»", "«Cree en el Señor Jesús y serás salvo, junto con todos los de tu casa»", "Hechos 16:31", "jardin"),
+          buildWeek(3, "Lección 3: Llevar a un amigo a Jesús", "«Mi propósito es darles una vida plena y abundante»", "Juan 10:10", "jardin"),
+          buildWeek(4, "Lección 4: Caminar sobre el agua", "«Jesús les dijo: “¡Cálmense! ¡Soy yo! ¡No tengan miedo!”»", "Mateo 14:27, TLA", "jardin"),
+          buildWeek(5, "Lección 5: Amigo de los solitarios", "«El Señor está cerca de los que tienen quebrantado el corazón»", "Salmo 34:18", "jardin"),
+          buildWeek(6, "Lección 6: Tocar su manto", "«\"Hija\", le dijo Jesús, \"tu fe te ha sanado. Ve en paz\"»", "Lucas 8:48", "jardin"),
+          buildWeek(7, "Lección 7: «¡Niña, levántate!»", "«Todos los que pertenecen a Cristo recibirán vida nueva»", "1 Corintios 15:22", "jardin"),
+          buildWeek(8, "Lección 8: Un sábado feliz", "«El Hijo del hombre es Señor aun del sábado»", "Marcos 2:28, RV95", "jardin"),
+          buildWeek(9, "Lección 9: «Toma tu camilla y anda»", "«Dios los salvó por su gracia cuando creyeron. Ustedes no tienen ningún mérito en eso; es un regalo de Dios»", "Efesios 2:8", "jardin"),
+          buildWeek(10, "Lección 10: El ruidoso Bartimeo", "«Todo el que invoque el nombre del Señor será salvo»", "Joel 2:32", "jardin"),
+          buildWeek(11, "Lección 11: El soldado que tenía mucha fe", "«Vuelve a tu casa. Debido a que creíste, ha sucedido»", "Mateo 8:13", "jardin"),
+          buildWeek(12, "Lección 12: Sorpresa en un funeral", "«Que Dios, que da esperanza, los llene de alegría y paz a ustedes que tienen fe en él»", "Romanos 15:13, DHH", "jardin"),
+          buildWeek(13, "Lección 13: «Lázaro, ¡despierta!»", "«Yo soy la resurrección y la vida. El que cree en mí vivirá aun después de haber muerto»", "Juan 11:25", "jardin")
+        ]
+      };
+    }
+
+    let db;
+    try {
+      const stored = localStorage.getItem('es_versiculos_multidep_v8_db');
+      db = stored ? JSON.parse(stored) : getInitialData();
+    } catch(e) {
+      db = getInitialData();
+    }
+
+    let userProfile = null;
+    try {
+      userProfile = JSON.parse(localStorage.getItem('es_user_profile'));
+    } catch(e) {}
+
+    let completedGames = {};
+    try {
+      completedGames = JSON.parse(localStorage.getItem('es_completed_games')) || {};
+    } catch(e) {}
+
+    let currentDep = localStorage.getItem('es_last_dep') || 'adultos';
+    let currentTab = localStorage.getItem('es_last_tab_v5') || 'versiculos';
+    let selectedWeekIndex = getCurrentWeekIndex();
+    let currentGame = 'ordenar';
+
+    function saveData() {
+      try { localStorage.setItem('es_versiculos_multidep_v8_db', JSON.stringify(db)); } catch(e) {}
+    }
+
+    function saveGamesProgress() {
+      try { localStorage.setItem('es_completed_games', JSON.stringify(completedGames)); } catch(e) {}
+    }
+
+    function getCurrentWeekIndex() {
+      const today = new Date().toISOString().split('T')[0];
+      const index = WEEKS_SCHEDULE.findIndex(w => today >= w.inicio && today <= w.fin);
+      return index !== -1 ? index : 4; // Por defecto semana actual o semana 5 (octubre 2026)
+    }
+
+    function loadDistricts() {
+      const select = document.getElementById("inputDistrict");
+      if(!select) return;
+      select.innerHTML = '<option value="">-- Selecciona tu distrito --</option>';
+      DISTRITOS_ASOCIACION.forEach(d => {
+        const opt = document.createElement("option");
+        opt.value = d;
+        opt.textContent = d;
+        select.appendChild(opt);
+      });
+    }
+
+    function renderUserGreeting() {
+      const box = document.getElementById('greetingBox');
+      const depLabel = currentDep === 'adultos' ? 'Adultos' : (currentDep === 'menores' ? 'Menores' : 'Jardín de Infantes');
+      if (userProfile && userProfile.name) {
+        box.innerHTML = `Hola <b>${userProfile.name}</b> 👋. ¿Te acuerdas de aprender el versículo de esta semana de <b>${depLabel}</b>? Juega para practicar en la sección de <b>Juegos</b> o estudiar la lección en PDF.`;
+      } else {
+        box.innerHTML = `Hola 👋. ¿Te acuerdas de aprender el versículo de esta semana de <b>${depLabel}</b>? Juega para practicar en la sección de <b>Juegos</b> o estudiar la lección en PDF.`;
+      }
+    }
+
+    function saveUserProfile(e) {
+      e.preventDefault();
+      userProfile = {
+        name: document.getElementById('inputName').value,
+        church: document.getElementById('inputChurch').value,
+        district: document.getElementById('inputDistrict').value,
+        association: document.getElementById('inputAssociation').value
+      };
+      try { localStorage.setItem('es_user_profile', JSON.stringify(userProfile)); } catch(e) {}
+      document.getElementById('userModal').style.display = 'none';
+      renderUserGreeting();
+    }
+
+    function openUserProfile() {
+      loadDistricts();
+      if (userProfile) {
+        document.getElementById('inputName').value = userProfile.name || '';
+        document.getElementById('inputChurch').value = userProfile.church || '';
+        document.getElementById('inputDistrict').value = userProfile.district || '';
+        document.getElementById('inputAssociation').value = userProfile.association || '';
+      }
+      document.getElementById('userModal').style.display = 'flex';
+    }
+
+    function closeUserProfile() {
+      document.getElementById('userModal').style.display = 'none';
+    }
+
+    function triggerCelebration() {
+      if (typeof confetti === 'function') {
+        confetti({ particleCount: 120, spread: 80, origin: { y: 0.6 } });
+        setTimeout(() => {
+          confetti({ particleCount: 60, angle: 60, spread: 55, origin: { x: 0 } });
+          confetti({ particleCount: 60, angle: 120, spread: 55, origin: { x: 1 } });
+        }, 250);
+      }
+    }
+
+    function markGameCompleted(gameKey) {
+      const weekKey = `${currentDep}_w${selectedWeekIndex}`;
+      if (!completedGames[weekKey]) completedGames[weekKey] = {};
+      completedGames[weekKey][gameKey] = true;
+      saveGamesProgress();
+      triggerCelebration();
+      updateGameProgressBar();
+    }
+
+    function updateGameProgressBar() {
+      const weekKey = `${currentDep}_w${selectedWeekIndex}`;
+      const weekGames = completedGames[weekKey] || {};
+      const totalGames = 4;
+      let count = 0;
+      
+      ['ordenar', 'sopa', 'completar', 'opcion'].forEach(g => {
+        if (weekGames[g]) count++;
+      });
+
+      const percent = Math.round((count / totalGames) * 100);
+      const fill = document.getElementById('progressBarFill');
+      const text = document.getElementById('progressPercentText');
+
+      if (fill && text) {
+        fill.style.width = percent + '%';
+        text.innerText = `${percent}% Completado (${count}/4 Juegos)`;
+      }
+
+      document.getElementById('btnGame1').classList.toggle('completed', !!weekGames['ordenar']);
+      document.getElementById('btnGame2').classList.toggle('completed', !!weekGames['sopa']);
+      document.getElementById('btnGame3').classList.toggle('completed', !!weekGames['completar']);
+      document.getElementById('btnGame4').classList.toggle('completed', !!weekGames['opcion']);
+    }
+
+    /* RENDERIZADO DE SEMANAS CON COLOR CIAN/CELESTE EN PASADAS */
+    function renderWeeksGrid() {
+      const dataset = (db && db[currentDep]) ? db[currentDep] : getInitialData()[currentDep];
+      const weeksGrid = document.getElementById('weeksGrid');
+      const label = document.getElementById('selectedWeekLabel');
+      const currentWeekIdx = getCurrentWeekIndex();
+      
+      if(label) label.innerText = `Semana ${selectedWeekIndex + 1}`;
+      weeksGrid.innerHTML = '';
+
+      dataset.forEach((w, idx) => {
+        const isCurrent = idx === currentWeekIdx;
+        const isPast = idx < currentWeekIdx;
+        const isSelected = idx === selectedWeekIndex;
+
+        const div = document.createElement('div');
+        div.className = `week-card ${isSelected ? 'active' : ''} ${isCurrent ? 'current' : ''} ${isPast ? 'past-week' : ''}`;
+        div.innerHTML = `
+          <div class="num">${isPast ? '✓ Sem ' : 'Sem '}${w.sem}</div>
+          <div class="sub">${w.titulo.length > 12 ? w.titulo.substring(0,12)+'...' : w.titulo}</div>
+        `;
+        div.onclick = () => {
+          selectedWeekIndex = idx;
+          renderWeeksGrid();
+          if (currentTab === 'versiculos') renderUI();
+          else if (currentTab === 'juegos') initGameUI();
+          else if (currentTab === 'lecciones') {
+            renderSidebarLessons();
+            loadPdfForLesson(selectedWeekIndex);
+          }
+        };
+        weeksGrid.appendChild(div);
+      });
+    }
+
+    function switchDepartment(dep) {
+      currentDep = dep;
+      try { localStorage.setItem('es_last_dep', dep); } catch(e) {}
+
+      document.querySelectorAll('.dep-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', (dep === 'adultos' && idx === 0) || (dep === 'menores' && idx === 1) || (dep === 'jardin' && idx === 2));
+      });
+
+      renderUserGreeting();
+      renderWeeksGrid();
+
+      if (currentTab === 'versiculos') renderUI();
+      else if (currentTab === 'juegos') initGameUI();
+      else if (currentTab === 'lecciones') {
+        renderSidebarLessons();
+        loadPdfForLesson(selectedWeekIndex);
+      }
+    }
+
+    function switchTab(tab) {
+      currentTab = tab;
+      try { localStorage.setItem('es_last_tab_v5', tab); } catch(e) {}
+
+      document.querySelectorAll('.tab-btn').forEach((btn, idx) => {
+        btn.classList.toggle('active', 
+          (tab === 'versiculos' && idx === 0) || 
+          (tab === 'juegos' && idx === 1) || 
+          (tab === 'lecciones' && idx === 2)
+        );
+      });
+
+      document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+      if (tab === 'versiculos') {
+        document.getElementById('tabVersiculos').classList.add('active');
+        renderUI();
+      } else if (tab === 'juegos') {
+        document.getElementById('tabJuegos').classList.add('active');
+        initGameUI();
+      } else if (tab === 'lecciones') {
+        document.getElementById('tabLecciones').classList.add('active');
+        renderSidebarLessons();
+        loadPdfForLesson(selectedWeekIndex);
+      }
+    }
+
+    function renderUI() {
+      const dataset = (db && db[currentDep]) ? db[currentDep] : getInitialData()[currentDep];
+      const item = dataset[selectedWeekIndex] || dataset[0];
+
+      const depNames = { adultos: 'Adultos: El don de profecía', menores: 'Menores: Serie Intermedia', jardin: 'Jardín de Infantes: Jesús Vivo' };
+      document.getElementById('heroBadge').innerText = depNames[currentDep];
+      document.getElementById('heroTitle').innerText = item.titulo;
+      document.getElementById('heroDate').innerText = `Semana ${item.sem} (${item.fechaInicio} al ${item.fechaFin})`;
+      document.getElementById('heroVerse').innerText = `"${item.texto}"`;
+      document.getElementById('heroRef').innerText = item.ref;
+      document.getElementById('audioPlayer').src = item.audio;
+    }
+
+    function renderSidebarLessons() {
+      const dataset = (db && db[currentDep]) ? db[currentDep] : getInitialData()[currentDep];
+      const sidebar = document.getElementById('sidebarLessonsList');
+      const sidebarDepTitle = document.getElementById('sidebarDepTitle');
+      
+      const depLabels = { adultos: 'Adultos', menores: 'Menores', jardin: 'Jardín de Infantes' };
+      sidebarDepTitle.innerText = `Lecciones: ${depLabels[currentDep]}`;
+      sidebar.innerHTML = '';
+
+      dataset.forEach((w, idx) => {
+        const isSelected = idx === selectedWeekIndex;
+        const div = document.createElement('div');
+        div.className = `lesson-sidebar-item ${isSelected ? 'active' : ''}`;
+        div.innerHTML = `
+          <div class="title">Sem ${w.sem}: ${w.titulo}</div>
+          <div class="sub">Del ${w.fechaInicio} al ${w.fechaFin}</div>
+        `;
+        div.onclick = () => {
+          selectedWeekIndex = idx;
+          renderWeeksGrid();
+          renderSidebarLessons();
+          loadPdfForLesson(idx);
+        };
+        sidebar.appendChild(div);
+      });
+
+      const anexoDiv = document.createElement('div');
+      anexoDiv.className = `lesson-sidebar-item ${selectedWeekIndex === 'anexo1' ? 'active' : ''}`;
+      anexoDiv.style.borderLeft = '4px solid var(--accent)';
+      anexoDiv.innerHTML = `
+        <div class="title">📌 Anexo 1: Recursos Adicionales</div>
+        <div class="sub">Material complementario del trimestre</div>
+      `;
+      anexoDiv.onclick = () => {
+        selectedWeekIndex = 'anexo1';
+        renderSidebarLessons();
+        loadAnexoPdf();
+      };
+      sidebar.appendChild(anexoDiv);
+    }
+
+    /* VISOR PDF CON FALLBACK HÍBRIDO GARANTIZADO */
+    let pdfDoc = null;
+    let currentPdfPage = 1;
+    let totalPdfPages = 1;
+
+    function renderPdfPage(pageNum) {
+      if (!pdfDoc) return;
+      pdfDoc.getPage(pageNum).then(page => {
+        const canvas = document.getElementById('pdfCanvas');
+        const ctx = canvas.getContext('2d');
+        const viewport = page.getViewport({ scale: 1.3 });
+
+        canvas.height = viewport.height;
+        canvas.width = viewport.width;
+
+        const renderContext = {
+          canvasContext: ctx,
+          viewport: viewport
+        };
+        page.render(renderContext);
+
+        document.getElementById('pdfPageIndicator').innerText = `Página ${pageNum} de ${totalPdfPages}`;
+        document.getElementById('pdfPrevBtn').disabled = pageNum <= 1;
+        document.getElementById('pdfNextBtn').disabled = pageNum >= totalPdfPages;
+      });
+    }
+
+    function prevPdfPage() {
+      if (currentPdfPage > 1) {
+        currentPdfPage--;
+        renderPdfPage(currentPdfPage);
+      }
+    }
+
+    function nextPdfPage() {
+      if (currentPdfPage < totalPdfPages) {
+        currentPdfPage++;
+        renderPdfPage(currentPdfPage);
+      }
+    }
+
+    function renderPdfViewer(pdfPath, title, subtitle) {
+      document.getElementById('pdfViewerTitle').innerText = title;
+      document.getElementById('pdfViewerSubtitle').innerText = subtitle;
+      
+      const downloadBtn = document.getElementById('pdfGreenDownloadBtn');
+      downloadBtn.href = pdfPath;
+
+      const canvasWrapper = document.getElementById('pdfCanvasWrapper');
+      const fallbackFrame = document.getElementById('pdfFallbackFrame');
+      const navControls = document.getElementById('pdfNavControls');
+
+      // Intentar renderizar con PDF.js nativo sin barras
+      if (typeof pdfjsLib !== 'undefined') {
+        pdfjsLib.getDocument(pdfPath).promise.then(pdf => {
+          pdfDoc = pdf;
+          totalPdfPages = pdf.numPages;
+          currentPdfPage = 1;
+
+          canvasWrapper.style.display = 'block';
+          fallbackFrame.style.display = 'none';
+          navControls.style.display = 'flex';
+
+          renderPdfPage(currentPdfPage);
+        }).catch(err => {
+          console.log("Activando visor embed nativo fallback para:", pdfPath);
+          canvasWrapper.style.display = 'none';
+          fallbackFrame.style.display = 'block';
+          navControls.style.display = 'none';
+          fallbackFrame.src = pdfPath + "#toolbar=0&navpanes=0&scrollbar=1";
+        });
+      } else {
+        canvasWrapper.style.display = 'none';
+        fallbackFrame.style.display = 'block';
+        navControls.style.display = 'none';
+        fallbackFrame.src = pdfPath + "#toolbar=0&navpanes=0&scrollbar=1";
+      }
+    }
+
+    function loadPdfForLesson(index) {
+      if (index === 'anexo1') return loadAnexoPdf();
+      const item = db[currentDep][index];
+      const pdfPath = item.pdfUrl || `pdf/${currentDep}/leccion_sem${String(index + 1).padStart(2, '0')}.pdf`;
+      renderPdfViewer(pdfPath, `Semana ${index + 1}: ${item.titulo}`, `Folleto de ${currentDep.toUpperCase()}`);
+    }
+
+    function loadAnexoPdf() {
+      const pdfPath = `pdf/${currentDep}/anexo1.pdf`;
+      renderPdfViewer(pdfPath, `Anexo 1 - Recursos Adicionales`, `Anexo Complementario (${currentDep.toUpperCase()})`);
+    }
+
+    function switchGame(game) {
+      currentGame = game;
+      document.querySelectorAll('.game-btn').forEach((btn, i) => {
+        btn.classList.toggle('active', (game==='ordenar'&&i===0)||(game==='sopa'&&i===1)||(game==='completar'&&i===2)||(game==='opcion'&&i===3));
+      });
+      document.getElementById('gameOrdenar').style.display = game === 'ordenar' ? 'block' : 'none';
+      document.getElementById('gameSopa').style.display = game === 'sopa' ? 'block' : 'none';
+      document.getElementById('gameCompletar').style.display = game === 'completar' ? 'block' : 'none';
+      document.getElementById('gameOpcion').style.display = game === 'opcion' ? 'block' : 'none';
+      initGameUI();
+    }
+
+    function initGameUI() {
+      updateGameProgressBar();
+      const dataset = (db && db[currentDep]) ? db[currentDep] : getInitialData()[currentDep];
+      const item = dataset[selectedWeekIndex] || dataset[0];
+      document.getElementById('gameTitle').innerText = `Repaso (${currentDep.toUpperCase()}): ${item.titulo}`;
+
+      if (currentGame === 'ordenar') initOrderGame();
+      else if (currentGame === 'sopa') initSopaGame();
+      else if (currentGame === 'completar') initFillGame();
+      else if (currentGame === 'opcion') initQuizGame();
+    }
+
+    let currentWordsOrder = [];
+    let userWordsOrder = [];
+
+    function initOrderGame() {
+      const dataset = (db && db[currentDep]) ? db[currentDep] : getInitialData()[currentDep];
+      const item = dataset[selectedWeekIndex] || dataset[0];
+      const text = item.texto.replace(/[«»"]/g, '');
+      currentWordsOrder = text.split(/\s+/);
+      
+      const shuffled = [...currentWordsOrder].sort(() => Math.random() - 0.5);
+      userWordsOrder = [];
+
+      const wordPool = document.getElementById('wordPool');
+      const targetPool = document.getElementById('targetPool');
+      wordPool.innerHTML = '';
+      targetPool.innerHTML = '';
+
+      shuffled.forEach((w) => {
+        const chip = document.createElement('div');
+        chip.className = 'word-chip';
+        chip.innerText = w;
+        chip.onclick = () => {
+          targetPool.appendChild(chip);
+          userWordsOrder.push(w);
+        };
+        wordPool.appendChild(chip);
+      });
+    }
+
+    function checkWordOrder() {
+      const userText = userWordsOrder.join(' ').toLowerCase().replace(/[.,;]/g, '');
+      const originalText = currentWordsOrder.join(' ').toLowerCase().replace(/[.,;]/g, '');
+
+      if (userText === originalText && userWordsOrder.length > 0) {
+        markGameCompleted('ordenar');
+        alert('¡Excelente! Has ordenado el versículo correctamente 🎉');
+      } else {
+        alert('Hay algunas palabras fuera de orden o incompletas. Inténtalo de nuevo 💪');
+      }
+    }
+
+    /* SOPA DE LETRAS CON CELEBRACIÓN AL COMPLETAR TODAS LAS PALABRAS */
+    let targetSopaWords = [];
+    let foundSopaWordsCount = 0;
+    let isDragging = false;
+    let dragSelectedCells = [];
+
+    function initSopaGame() {
+      const dataset = (db && db[currentDep]) ? db[currentDep] : getInitialData()[currentDep];
+      const item = dataset[selectedWeekIndex] || dataset[0];
+      const cleanText = item.texto.replace(/[^\w\sáéíóúÁÉÍÓÚñÑ]/g, '');
+      
+      const allWords = cleanText.split(/\s+/)
+        .filter(w => w.length >= 4)
+        .map(w => w.normalize("NFD").replace(/[̀-ͯ]/g, "").toUpperCase());
+
+      targetSopaWords = [...new Set(allWords)].slice(0, 5);
+      foundSopaWordsCount = 0;
+
+      document.getElementById('wsWordList').innerText = 'Palabras a buscar: ' + targetSopaWords.join(', ');
+
+      const size = 10;
+      let grid = Array(size).fill(null).map(() => Array(size).fill(''));
+
+      targetSopaWords.forEach((word) => {
+        let placed = false;
+        let attempts = 0;
+        while (!placed && attempts < 100) {
+          attempts++;
+          const dir = Math.random() < 0.5 ? 'H' : 'V';
+          let row = Math.floor(Math.random() * size);
+          let col = Math.floor(Math.random() * size);
+
+          if (dir === 'H' && col + word.length <= size) {
+            let canPlace = true;
+            for (let i = 0; i < word.length; i++) {
+              if (grid[row][col + i] !== '' && grid[row][col + i] !== word[i]) {
+                canPlace = false; break;
+              }
+            }
+            if (canPlace) {
+              for (let i = 0; i < word.length; i++) grid[row][col + i] = word[i];
+              placed = true;
+            }
+          } else if (dir === 'V' && row + word.length <= size) {
+            let canPlace = true;
+            for (let i = 0; i < word.length; i++) {
+              if (grid[row + i][col] !== '' && grid[row + i][col] !== word[i]) {
+                canPlace = false; break;
+              }
+            }
+            if (canPlace) {
+              for (let i = 0; i < word.length; i++) grid[row + i][col] = word[i];
+              placed = true;
+            }
+          }
+        }
+      });
+
+      const alphabet = "ABCDEFGHIJKLMNÑOPQRSTUVWXYZ";
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          if (grid[r][c] === '') {
+            grid[r][c] = alphabet[Math.floor(Math.random() * alphabet.length)];
+          }
+        }
+      }
+
+      const wsGrid = document.getElementById('wsGrid');
+      wsGrid.style.gridTemplateColumns = `repeat(${size}, 34px)`;
+      wsGrid.innerHTML = '';
+      dragSelectedCells = [];
+
+      for (let r = 0; r < size; r++) {
+        for (let c = 0; c < size; c++) {
+          const cell = document.createElement('div');
+          cell.className = 'ws-cell';
+          cell.innerText = grid[r][c];
+          cell.dataset.row = r;
+          cell.dataset.col = c;
+
+          cell.addEventListener('mousedown', (e) => startDrag(cell));
+          cell.addEventListener('mouseenter', (e) => enterDrag(cell));
+          cell.addEventListener('touchstart', (e) => { e.preventDefault(); startDrag(cell); });
+          cell.addEventListener('touchmove', (e) => {
+            e.preventDefault();
+            const touch = e.touches[0];
+            const elem = document.elementFromPoint(touch.clientX, touch.clientY);
+            if (elem && elem.classList.contains('ws-cell')) {
+              enterDrag(elem);
+            }
+          });
+
+          wsGrid.appendChild(cell);
+        }
+      }
+
+      document.addEventListener('mouseup', endDrag);
+      document.addEventListener('touchend', endDrag);
+    }
+
+    function startDrag(cell) {
+      if (cell.classList.contains('found')) return;
+      isDragging = true;
+      dragSelectedCells = [cell];
+      cell.classList.add('selecting');
+    }
+
+    function enterDrag(cell) {
+      if (!isDragging || cell.classList.contains('found')) return;
+      if (!dragSelectedCells.includes(cell)) {
+        dragSelectedCells.push(cell);
+        cell.classList.add('selecting');
+      }
+    }
+
+    function endDrag() {
+      if (!isDragging) return;
+      isDragging = false;
+
+      const selectedWord = dragSelectedCells.map(c => c.innerText).join('');
+      const selectedWordRev = selectedWord.split('').reverse().join('');
+
+      let matchedWord = null;
+      targetSopaWords.forEach(w => {
+        if (selectedWord === w || selectedWordRev === w) {
+          matchedWord = w;
+        }
+      });
+
+      if (matchedWord) {
+        dragSelectedCells.forEach(c => {
+          c.classList.remove('selecting');
+          c.classList.add('found');
+        });
+
+        foundSopaWordsCount++;
+        
+        // Si ya encontró todas las palabras, se dispara la celebración
+        if (foundSopaWordsCount >= targetSopaWords.length) {
+          markGameCompleted('sopa');
+          alert(`¡Felicidades! Encontraste todas las ${targetSopaWords.length} palabras de la lección 🎉`);
+        } else {
+          alert(`¡Encontraste la palabra: ${matchedWord}! Quedan ${targetSopaWords.length - foundSopaWordsCount} palabras.`);
+        }
+      } else {
+        dragSelectedCells.forEach(c => c.classList.remove('selecting'));
+      }
+      dragSelectedCells = [];
+    }
+
+    function initFillGame() {
+      const dataset = (db && db[currentDep]) ? db[currentDep] : getInitialData()[currentDep];
+      const item = dataset[selectedWeekIndex] || dataset[0];
+      const words = item.texto.split(' ');
+      const container = document.getElementById('fillVerseContainer');
+      container.innerHTML = '';
+
+      words.forEach((w, i) => {
+        if (i % 3 === 1 && w.length > 2) {
+          const input = document.createElement('input');
+          input.type = 'text';
+          input.dataset.answer = w.replace(/[.,;«»"]/g, '');
+          input.style.width = (w.length * 12 + 10) + 'px';
+          input.style.padding = '4px';
+          input.style.margin = '0 4px';
+          container.appendChild(input);
+        } else {
+          const span = document.createElement('span');
+          span.innerText = w + ' ';
+          container.appendChild(span);
+        }
+      });
+    }
+
+    function checkFillGame() {
+      const inputs = document.querySelectorAll('#fillVerseContainer input');
+      let correct = 0;
+      inputs.forEach(inp => {
+        if (inp.value.trim().toLowerCase() === inp.dataset.answer.toLowerCase()) {
+          inp.style.borderColor = 'green';
+          inp.style.background = '#c6f6d5';
+          correct++;
+        } else {
+          inp.style.borderColor = 'red';
+          inp.style.background = '#fed7d7';
+        }
+      });
+
+      if (correct === inputs.length && inputs.length > 0) {
+        markGameCompleted('completar');
+        alert('¡Completaste perfectamente el versículo! 🎉');
+      } else {
+        alert(`Tuviste ${correct} de ${inputs.length} aciertos. Revisa los marcados en rojo.`);
+      }
+    }
+
+    function initQuizGame() {
+      const dataset = (db && db[currentDep]) ? db[currentDep] : getInitialData()[currentDep];
+      const currentItem = dataset[selectedWeekIndex] || dataset[0];
+      
+      document.getElementById('quizVerseText').innerText = `"${currentItem.texto}"`;
+
+      const options = [currentItem.ref];
+      while (options.length < 3 && options.length < dataset.length) {
+        const randIndex = Math.floor(Math.random() * dataset.length);
+        const randRef = dataset[randIndex].ref;
+        if (!options.includes(randRef)) options.push(randRef);
+      }
+
+      options.sort(() => Math.random() - 0.5);
+
+      const container = document.getElementById('quizOptionsContainer');
+      container.innerHTML = '';
+
+      options.forEach(opt => {
+        const btn = document.createElement('button');
+        btn.className = 'btn';
+        btn.style.background = '#edf2f7';
+        btn.style.color = 'var(--text)';
+        btn.style.border = '1px solid #cbd5e0';
+        btn.style.textAlign = 'left';
+        btn.style.padding = '12px';
+        btn.innerText = opt;
+        btn.onclick = () => {
+          if (opt === currentItem.ref) {
+            btn.style.background = '#c6f6d5';
+            btn.style.borderColor = 'green';
+            markGameCompleted('opcion');
+            alert('¡Correcto! Es la cita exacta 🎉');
+          } else {
+            btn.style.background = '#fed7d7';
+            btn.style.borderColor = 'red';
+            alert(`Incorrecto. La respuesta correcta es: ${currentItem.ref}`);
+          }
+        };
+        container.appendChild(btn);
+      });
+    }
+
+    function sendWhatsApp() {
+      const item = db[currentDep][selectedWeekIndex];
+      const depName = currentDep === 'adultos' ? 'Adultos' : (currentDep === 'menores' ? 'Menores' : 'Jardín de Infantes');
+      const message = `📖 *Escuela Sabática - Versículo para Memorizar*\n` +
+                      `📌 *Departamento:* ${depName}\n` +
+                      `🗓️ *Semana ${item.sem}:* ${item.titulo}\n` +
+                      `🗓️ *Fecha:* Del ${item.fechaInicio} al ${item.fechaFin}\n\n` +
+                      `💬 *Versículo:*\n"${item.texto}"\n\n` +
+                      `📍 *Cita Bíblica:* ${item.ref}`;
+
+      const encodedMessage = encodeURIComponent(message);
+      window.open(`https://api.whatsapp.com/send?text=${encodedMessage}`, '_blank');
+    }
+
+    function requestAdminAccess() {
+      const pass = prompt("Ingrese la clave de administrador:");
+      if (pass === "4321") {
+        document.getElementById('adminModal').style.display = 'flex';
+        renderAdminEditor();
+      } else if (pass !== null) {
+        alert("Clave incorrecta.");
+      }
+    }
+
+    function closeAdminModal() {
+      document.getElementById('adminModal').style.display = 'none';
+      renderUI();
+    }
+
+    function renderAdminEditor() {
+      const editorList = document.getElementById('adminEditorList');
+      editorList.innerHTML = '';
+
+      db[currentDep].forEach((item, idx) => {
+        const div = document.createElement('div');
+        div.style.background = '#f7fafc';
+        div.style.padding = '12px';
+        div.style.borderRadius = '8px';
+        div.style.marginBottom = '10px';
+        div.style.border = '1px solid #cbd5e0';
+        div.innerHTML = `
+          <strong style="color:var(--primary); font-size:0.95rem;">Semana ${item.sem} (${currentDep.toUpperCase()})</strong>
+          <div class="form-group"><label>Título de la Lección:</label><input type="text" value="${item.titulo}" onchange="updateItem(${idx}, 'titulo', this.value)"></div>
+          <div class="form-group"><label>Texto Versículo:</label><textarea onchange="updateItem(${idx}, 'texto', this.value)">${item.texto}</textarea></div>
+          <div class="form-group"><label>Referencia / Cita Bíblica:</label><input type="text" value="${item.ref}" onchange="updateItem(${idx}, 'ref', this.value)"></div>
+          <div class="form-group"><label>Ruta o Enlace PDF (Local o Google Drive):</label><input type="text" value="${item.pdfUrl || ''}" placeholder="Ej: pdf/adultos/leccion_sem01.pdf o https://drive.google.com/..." onchange="updateItem(${idx}, 'pdfUrl', this.value)"></div>
+          <div class="form-group"><label>Ruta o Enlace de Audio MP3:</label><input type="text" value="${item.audio}" onchange="updateItem(${idx}, 'audio', this.value)"></div>
+        `;
+        editorList.appendChild(div);
+      });
+    }
+
+    function updateItem(index, field, value) {
+      db[currentDep][index][field] = value;
+      saveData();
+    }
+
+    function resetToDefaults() {
+      if (confirm("¿Restaurar todos los datos originales de los 3 departamentos?")) {
+        db = getInitialData();
+        saveData();
+        renderAdminEditor();
+        renderUI();
+      }
+    }
+
+    function exportToExcel() {
+      const exportRows = [];
+      for (let depKey in db) {
+        db[depKey].forEach(item => {
+          exportRows.push({
+            "Departament": depKey === 'adultos' ? 'Adultos' : (depKey === 'menores' ? 'Menores' : 'Jardín de Infantes'),
+            "Semana": item.sem,
+            "Fecha Inicio": item.fechaInicio,
+            "Fecha Fin": item.fechaFin,
+            "Titulo": item.titulo,
+            "Texto Versiculo": item.texto,
+            "Referencia": item.ref,
+            "Ruta PDF": item.pdfUrl || `pdf/${depKey}/leccion_sem${String(item.sem).padStart(2, '0')}.pdf`,
+            "Nombre Audio": item.audio
+          });
+        });
+      }
+      const ws = XLSX.utils.json_to_sheet(exportRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Lecciones_EscuelaSabatica");
+      XLSX.writeFile(wb, "Lecciones_EscuelaSabatica_Completo.xlsx");
+    }
+
+    function downloadExcelTemplate() {
+      const templateRows = [
+        {
+          "Departament": "Adultos",
+          "Semana": 1,
+          "Fecha Inicio": "2026-09-27",
+          "Fecha Fin": "2026-10-03",
+          "Titulo": "Lección 1: El Creador habla",
+          "Texto Versiculo": "En el pasado, Dios habló muchas veces y de muchas maneras...",
+          "Referencia": "Hebreos 1:1-2",
+          "Ruta PDF": "pdf/adultos/leccion_sem01.pdf",
+          "Nombre Audio": "audios/audio_adultos_sem01.mp3"
+        }
+      ];
+      const ws = XLSX.utils.json_to_sheet(templateRows);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, "Plantilla_Importacion");
+      XLSX.writeFile(wb, "Plantilla_Lecciones_EscuelaSabatica.xlsx");
+    }
+
+    function importFromExcel(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const data = new Uint8Array(e.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const sheetName = workbook.SheetNames[0];
+          const json = XLSX.utils.sheet_to_json(workbook.Sheets[sheetName], { defval: "" });
+
+          const getVal = (row, keys) => {
+            for (let k of keys) {
+              for (let prop in row) {
+                if (prop.trim().toLowerCase() === k.toLowerCase()) return row[prop];
+              }
+            }
+            return "";
+          };
+
+          let count = 0;
+          json.forEach(row => {
+            const rawDep = String(getVal(row, ["Departament", "Departamento"])).trim().toLowerCase();
+            const semNum = parseInt(getVal(row, ["Semana", "Sem"]));
+
+            let depKey = "adultos";
+            if (rawDep.includes("menor")) depKey = "menores";
+            else if (rawDep.includes("jard") || rawDep.includes("infant")) depKey = "jardin";
+
+            if (!isNaN(semNum) && semNum >= 1 && semNum <= 13) {
+              const idx = semNum - 1;
+              const titulo = getVal(row, ["Titulo", "Título"]);
+              const texto = getVal(row, ["Texto Versiculo", "Texto Versículo", "Texto"]);
+              const ref = getVal(row, ["Referencia", "Cita"]);
+              const pdfUrl = getVal(row, ["Ruta PDF", "PDF", "Link PDF", "Enlace PDF"]);
+              const audio = getVal(row, ["Nombre Audio", "Audio"]);
+
+              if (titulo) db[depKey][idx].titulo = String(titulo);
+              if (texto) db[depKey][idx].texto = String(texto);
+              if (ref) db[depKey][idx].ref = String(ref);
+              if (pdfUrl) db[depKey][idx].pdfUrl = String(pdfUrl);
+              if (audio) db[depKey][idx].audio = String(audio);
+              count++;
+            }
+          });
+
+          if (count > 0) {
+            saveData();
+            renderAdminEditor();
+            renderUI();
+            if (currentTab === 'lecciones') {
+              renderSidebarLessons();
+              loadPdfForLesson(selectedWeekIndex);
+            }
+            alert(`¡Importadas ${count} lecciones con éxito!`);
+          } else {
+            alert("No se pudieron leer las filas del archivo Excel.");
+          }
+        } catch (err) { alert("Error al importar el archivo Excel."); }
+        event.target.value = '';
+      };
+      reader.readAsArrayBuffer(file);
+    }
+
+    function generateCapture() {
+      html2canvas(document.getElementById('heroCapture')).then(canvas => {
+        const dataUrl = canvas.toDataURL('image/png');
+        document.getElementById('generatedImage').src = dataUrl;
+        document.getElementById('downloadImageBtn').href = dataUrl;
+        document.getElementById('previewModal').style.display = 'flex';
+      });
+    }
+
+    function closePreviewModal() {
+      document.getElementById('previewModal').style.display = 'none';
+    }
+
+    window.onload = () => {
+      loadDistricts();
+      renderUserGreeting();
+      switchDepartment(currentDep);
+      switchTab(currentTab);
+    };
+  </script>
+</body>
+</html>
